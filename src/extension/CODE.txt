@@ -1,0 +1,149 @@
+// ==UserScript==
+// @name         体育部添加课外成绩
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  try to take over the world!
+// @author       You
+// @match        http://tybcj.ujs.edu.cn/ad/tycjgl.asp
+// @grant        none
+// @require      https://cdn.bootcss.com/jquery/3.3.0/jquery.min.js
+// ==/UserScript==
+
+(function() {
+    'use strict';
+//插入div**********************************************************************************************************************
+$("body>form[name='form1']").append("<div style=\"text-align: center;border: solid 10px white\"></div>");
+//插入文件选择框
+$("body>form[name='form1']>div:eq(1)").append("<input type=\"file\" name=\"file\" id=\"file\" value=\"选择课外成绩excel\" onchange=\"readExcel(this)\">");
+//插入按钮
+$("body>form[name='form1']>div:eq(1)").append("<input type=\"button\" value=\"提交课外成绩文件\" onclick=\"doInsert()\">");
+    $("body>form[name='form1']>div:eq(1)").append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+//添加textArea
+$("body>form[name='form1']>div:eq(1)").append("<input type=\"button\" value=\"重置课外成绩\" onclick=\"resetCj()\">");
+
+//加入progressbar***********************************************************************************************************************
+$("body>form[name='form1']").append("<div id=\"progressDiv\" style=\"text-align: center ;border: solid 10px white\"></div>");
+//插入文件选择框
+$("#progressDiv").append("<div id=\"progressInnerDiv\" class=\"progress\" style=\"width: 500px; margin: 0 auto\"></div>");
+//插入按钮
+$("#progressInnerDiv").append("<div class=\"progress-bar\" role=\"progressbar\" id=\"progress\" style=\"width: 0%;\" aria-valuenow=\"50\"\n" +
+    " aria-valuemin=\"0\"\n" +
+    " aria-valuemax=\"100\"></div>");
+
+    //插入读取js函数**********************************************************************************************************************
+    //定义函数为字符串
+var str="<link rel=\"stylesheet\" href=\"https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css\"\n" +
+    "          integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\">\n" +
+    "    <script src=\"https://cdn.bootcss.com/jquery/3.3.0/jquery.min.js\"></script>\n" +
+    "    <script src=\"https://cdn.bootcss.com/xlsx/0.14.2/xlsx.full.min.js\"></script>\n" +
+    "    <script src=\"https://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.js\"></script>\n" +
+    "    <script src=\"https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js\"\n" +
+    "            integrity=\"sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q\"\n" +
+    "            crossorigin=\"anonymous\"></script>\n" +
+    "    <script src=\"https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js\"\n" +
+    "            integrity=\"sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl\"\n" +
+    "            crossorigin=\"anonymous\"></script>\n" +
+    "    <script language=\"JavaScript\" type=\"text/JavaScript\">\n" +
+    "        //个人信息JSON\n" +
+    "        var infoJSON=[];\n" +
+    "        //urlJSON\n" +
+    "        var URLArray=new Array();\n" +
+    "\n" +
+    "        //读取excel\n" +
+    "        function readExcel(fileObj) {\n" +
+    "            var json = [];\n" +
+    "            var file = fileObj.files[0];\n" +
+    "            var fileReader = new FileReader();\n" +
+    "            fileReader.onload = function (e) {\n" +
+    "                var data = e.target.result;\n" +
+    "                wb = XLSX.read(data, {\n" +
+    "                    type: 'binary'\n" +
+    "                });\n" +
+    "                var obj = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);\n" +
+    "                //将获取的对象传递给json\n" +
+    "                json = obj;\n" +
+    "                //写入cjMap中\n" +
+    "                for (var i = 0; i < json.length; i++) {\n" +
+    "                    cjMap.set(json[i].学号, json[i].课外成绩);\n" +
+    "                }\n" +
+    "            }\n" +
+    "            fileReader.readAsBinaryString(file);\n" +
+    "        }\n" +
+    "\n" +
+    "        //获取个人Info\n" +
+    "        function getInfoJSON() {\n" +
+    "            var row = {};\n" +
+    "            for (let item of cjMap.entries()) {\n" +
+    "                row = {学号: item[0], 成绩: item[1], 班级编号: allMap.get(item[0])}\n" +
+    "                infoJSON.push(row);\n" +
+    "            }\n" +
+    "        }\n" +
+    "\n" +
+    "        //获取URL地址\n" +
+    "        function getURLArray() {\n" +
+    "            var timestamp = Date.parse(new Date());\n" +
+    "            //http://tybcj.ujs.edu.cn/ad/savecj.php?type=ty&xh=3180105024&catename=1&cj=&bjdh=1819_2_00000003_6_1_%D6%DC%C8%FD_5/6%BD%DA&_=1555074555710\n" +
+    "            var URLstr;\n" +
+    "            for (var i = 0; i < infoJSON.length; i++) {\n" +
+    "                URLstr = \"http://tybcj.ujs.edu.cn/ad/savecj.php?type=ty&xh=\" + infoJSON[i].学号 + \"&catename=1&cj=\" + infoJSON[i].成绩 + \"&bjdh=\" + infoJSON[i].班级编号 + \"&_=\" + timestamp;\n" +
+    "                URLArray.push(URLstr);\n" +
+    "            }\n" +
+    "            console.log(URLArray);\n" +
+    "        }\n" +
+    "\n" +
+    "        //发送ajax请求\n" +
+    "        function sendRequest(flag) {\n" +
+    "            var i = 0;\n" +
+    "            intervalId = setInterval(function () {\n" +
+    "                console.log(i + 1);\n" +
+    "                $.get(URLArray[i]);\n" +
+    "                i++;\n" +
+    "                //进度条操作\n" +
+    "                $(\"#progress\")[0].style.width = parseInt((i / URLArray.length) * 100) + \"%\";\n" +
+    "                $(\"#progress\")[0].innerText = parseInt((i / URLArray.length) * 100) + \"%\";\n" +
+    "                //请求完毕，做后续工作\n" +
+    "                if (i == URLArray.length) {\n" +
+    "                    clearInterval(intervalId);\n" +
+    "                    if (flag == 1) {\n" +
+    "                        alert(\"成功插入：\" + URLArray.length + \"条课外成绩信息\");\n" +
+    "                    } else {\n" +
+    "                        alert(\"全部学生的课外成绩已被清空\");\n" +
+    "                    }\n" +
+    "                    //清空临时数据\n" +
+    "                    URLArray = [];\n" +
+    "                    cjMap.clear();\n" +
+    "                    infoJSON = [];\n" +
+    "                    $(\"#file\")[0].value = null;\n" +
+    "                }\n" +
+    "            }, 250);\n" +
+    "        }\n" +
+    "        //重置所有学生课外成绩\n" +
+    "        function resetCj() {\n" +
+    "            var timestamp = Date.parse(new Date());\n" +
+    "            var URLstr;\n" +
+    "            for (let item of allMap.entries()) {\n" +
+    "                URLstr = \"http://tybcj.ujs.edu.cn/ad/savecj.php?type=ty&xh=\" + item[0] + \"&catename=1&cj=null&bjdh=\" + item[1] + \"&_=\" + timestamp;\n" +
+    "                URLArray.push(URLstr);\n" +
+    "            }\n" +
+    "            //进行ajax发送\n" +
+    "            sendRequest(0);\n" +
+    "        }\n" +
+    "        //插入\n" +
+    "        function doInsert() {\n" +
+    "            //获取个人信息json\n" +
+    "            getInfoJSON();\n" +
+    "            if (cjMap.size == 0) {\n" +
+    "                alert(\"请选择Excel文件\");\n" +
+    "            } else {\n" +
+    "                //拼接位URL\n" +
+    "                getURLArray();\n" +
+    "                //进行ajax发送\n" +
+    "                sendRequest(1);\n" +
+    "            }\n" +
+    "        }\n" +
+    "    </script>";
+//添加读取excel的函数
+$("head").append(str);
+    $("table:eq(0)")[0].border="2"
+    $("#file").width(200);
+})();
